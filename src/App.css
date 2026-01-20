@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .bg-custom-gradient {
+    background: linear-gradient(
+      90deg,
+      rgba(252, 227, 184, 0.88) 4%,
+      rgb(237, 233, 242) 9%,
+      rgb(244, 233, 225) 92%,
+      rgb(241, 227, 215) 96%,
+      rgb(246, 210, 184) 100%
+    );
+  }
+  .bg-nav-gradient {
+    background: #fcbc8b;
+    background: linear-gradient(
+      90deg,
+      rgba(252, 188, 139, 1) 0%,
+      rgb(237, 233, 242) 100%
+    );
+  }
+}
+
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
