@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Upload, FileText, Download } from "lucide-react";
+import { Upload, FileText, Download, Plus } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ImageReorderPopup from "./Upload";
@@ -154,7 +154,7 @@ const ClassroomDisplay = () => {
     };
     input.click();
   };
-   
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-[60vh] text-gray-600">
@@ -192,11 +192,10 @@ const ClassroomDisplay = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`py-4 border-b-2 font-medium text-sm transition ${
-                  activeTab === tab
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                className={`py-4 border-b-2 font-medium text-sm transition ${activeTab === tab
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -309,10 +308,17 @@ const ClassroomDisplay = () => {
               <h3 className="text-lg font-semibold text-gray-900">
                 Student List
               </h3>
-              <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                <Download className="w-4 h-4" />
-                Export
-              </button>
+              <div className="flex gap-2">
+                <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
+                  <Plus className="w-4 h-4" />
+                  Add Student Name List
+                </button>
+                <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                  <Download className="w-4 h-4" />
+                  Export
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto h-70">

@@ -24,18 +24,18 @@ const TopNav = () => {
     try {
       setIsCheckingProfile(true);
       const response = await axios.get(
-        `http://localhost:8000/api/teacherprofile/${teacherId}`
+        `http://localhost:5000/api/teacherprofile/${teacherId}`
       );
 
       console.log(response);
-      
+
 
       if (response.data) {
         // ✅ Profile exists → open view modal with data
         setTeacherData(response.data);
         setIsProfileViewOpen(true);
         console.log(teacherData);
-        
+
       } else {
         // ❌ No profile → open setup modal
         setIsProfileModalOpen(true);
@@ -59,14 +59,13 @@ const TopNav = () => {
       </div>
 
       <div className="flex gap-2 items-center">
-        <img src={notification} alt="notification" className="w-7 h-7" />
+        {/* <img src={notification} alt="notification" className="w-7 h-7" /> */}
 
         <img
           src={profile}
           alt="profile"
-          className={`w-10 h-10 cursor-pointer ${
-            isCheckingProfile ? "opacity-50 pointer-events-none" : ""
-          }`}
+          className={`w-10 h-10 cursor-pointer ${isCheckingProfile ? "opacity-50 pointer-events-none" : ""
+            }`}
           onClick={handleProfileClick}
         />
       </div>
