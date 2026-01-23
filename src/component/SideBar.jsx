@@ -6,19 +6,20 @@ import CreateClassroomModal from "../component/CreateClassroomModal";
 import ClassList from "./ClassList";
 
 export default function Sidebar() {
-  
+
 
   const Navigate = useNavigate();
 
-  const handlesendgeneralchat = () =>{
+  const handlesendgeneralchat = () => {
     Navigate("/generalchat")
   }
 
-  const handleopenquestiongenerator = () =>{
+  const handleopenquestiongenerator = () => {
     Navigate("/question-paper-generator")
   }
-  
+
   const [showModal, setShowModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
 
   return (
@@ -62,13 +63,19 @@ export default function Sidebar() {
             <span>Classes</span>
             <ChevronDown size={14} />
           </div>
-          <Plus size={16} className="cursor-pointer hover:text-white"  onClick={() => setShowModal(true)}/>
+          <Plus size={16} className="cursor-pointer hover:text-white" onClick={() => setShowModal(true)} />
         </div>
 
-         <CreateClassroomModal isOpen={showModal} onClose={() => setShowModal(false)} />
+        <CreateClassroomModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onClassCreated={() => {
+            setRefreshKey(prev => prev + 1);
+          }}
+        />
 
         {/* Class list */}
-        <ClassList/>
+        <ClassList refreshKey={refreshKey} />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import Voice from "../assets/voice.png";
 import Name from "../assets/name.svg";
 import ClassroomDisplay from "./ClassroomDisplay";
 import { useLocation } from "react-router-dom";
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 export default function Chat({ isWidget = false, hideHeader = false }) {
   const location = useLocation();
@@ -49,7 +50,148 @@ export default function Chat({ isWidget = false, hideHeader = false }) {
     scrollToBottom();
   }, [messages, generationMessages]);
 
-  // Listen for generation trigger from QuestionInput
+  // Listen for generation data and start SSE streaming
+  React.useEffect(() => {
+    const handleGenerationData = async (e) => {
+      // Ensure we only run this on the correct page
+      if (!location.pathname.includes("question-paper-generator")) return;
+
+      const { stream_url, task_id, ngrokUrl } = e.detail;
+      console.log(stream_url, task_id)
+      const stream_url_final = `https://0b615aab87fe.ngrok-free.app${stream_url}`
+      const userPrompt = "Generate questions";
+
+      // Add user message
+      setGenerationMessages((prev) => [
+        ...prev,
+        { text: userPrompt, sender: "user", timestamp: new Date() }
+      ]);
+
+      // Add initial thinking message
+      setGenerationMessages((prev) => [
+        ...prev,
+        { text: "Initializing...", sender: "ai", timestamp: new Date(), isStreaming: true }
+      ]);
+
+      // Start SSE connection with fetchEventSource to handle ngrok headers
+      const ctrl = new AbortController();
+
+      try {
+        await fetchEventSource(stream_url_final, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+          signal: ctrl.signal,
+
+          onopen: async (response) => {
+            if (response.ok) {
+              console.log("SSE Connection opened");
+            } else {
+              throw new Error(`SSE connection failed: ${response.status}`);
+            }
+          },
+
+          onmessage: (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              console.log("SSE Data:", data);
+
+              // Update the last AI message with streaming content
+              setGenerationMessages((prev) => {
+                const newMessages = [...prev];
+                const lastIndex = newMessages.length - 1;
+
+                if (lastIndex >= 0 && newMessages[lastIndex].sender === "ai" && newMessages[lastIndex].isStreaming) {
+                  if (data.status === "completed") {
+                    newMessages[lastIndex] = {
+                      text: "Processing complete! Fetching results...",
+                      sender: "ai",
+                      timestamp: new Date(),
+                      isStreaming: false
+                    };
+                  } else if (data.message) {
+                    newMessages[lastIndex] = {
+                      text: data.message,
+                      sender: "ai",
+                      timestamp: new Date(),
+                      isStreaming: true
+                    };
+                  }
+                }
+
+                return newMessages;
+              });
+
+              // If completed, fetch the final result
+              if (data.status === "completed") {
+                ctrl.abort(); // Close the SSE connection
+
+                // Fetch final result with ngrok header
+                fetch(`https://0b615aab87fe.ngrok-free.app/api/result/${task_id}`, {
+                  headers: {
+                    'ngrok-skip-browser-warning': 'true',
+                  }
+                })
+                  .then(res => res.json())
+                  .then(result => {
+                    console.log("Final Result:", result);
+
+                    // Display the result
+                    setGenerationMessages((prev) => [
+                      ...prev,
+                      {
+                        text: JSON.stringify(result, null, 2),
+                        sender: "ai",
+                        timestamp: new Date(),
+                        isResult: true
+                      }
+                    ]);
+                  })
+                  .catch(err => {
+                    console.error("Error fetching result:", err);
+                    setGenerationMessages((prev) => [
+                      ...prev,
+                      {
+                        text: "Error fetching final result. Please try again.",
+                        sender: "ai",
+                        timestamp: new Date()
+                      }
+                    ]);
+                  });
+              }
+            } catch (err) {
+              console.error("Error parsing SSE data:", err);
+            }
+          },
+
+          onerror: (error) => {
+            console.error("SSE Error:", error);
+            ctrl.abort();
+
+            setGenerationMessages((prev) => [
+              ...prev,
+              {
+                text: "Connection error. Please try again.",
+                sender: "ai",
+                timestamp: new Date()
+              }
+            ]);
+
+            throw error; // Stop retrying
+          }
+        });
+      } catch (error) {
+        console.error("fetchEventSource error:", error);
+      }
+    };
+
+    window.addEventListener("generation-data-ready", handleGenerationData);
+    return () => {
+      window.removeEventListener("generation-data-ready", handleGenerationData);
+    };
+  }, [location.pathname]);
+
+  // Keep the old trigger for backward compatibility
   React.useEffect(() => {
     const handleGenerationTrigger = (e) => {
       // Ensure we only run this on the correct page
@@ -78,23 +220,6 @@ export default function Chat({ isWidget = false, hideHeader = false }) {
         });
       }, 3000);
     };
-
-    // Check for pending generation from localStorage
-    const pendingGen = localStorage.getItem("pendingGeneration");
-    if (pendingGen) {
-      try {
-        const data = JSON.parse(pendingGen);
-        if (Date.now() - data.timestamp < 10000 && location.pathname.includes("question-paper-generator")) {
-          handleGenerationTrigger({ detail: data });
-          localStorage.removeItem("pendingGeneration");
-        } else if (Date.now() - data.timestamp >= 10000) {
-          localStorage.removeItem("pendingGeneration");
-        }
-      } catch (err) {
-        console.error("Error parsing pending generation:", err);
-        localStorage.removeItem("pendingGeneration");
-      }
-    }
 
     window.addEventListener("generate-triggered", handleGenerationTrigger);
     return () => window.removeEventListener("generate-triggered", handleGenerationTrigger);
@@ -383,7 +508,7 @@ export default function Chat({ isWidget = false, hideHeader = false }) {
             </div>
           )}
 
-          {questionPapers.map((paper) => (
+          {/* {questionPapers.length > 0 && questionPapers.map((paper) => (
             <div
               key={paper.sample}
               className=" bg-white shadow-xl rounded-2xl p-8 mb-10 border border-gray-200"
@@ -392,7 +517,7 @@ export default function Chat({ isWidget = false, hideHeader = false }) {
                 Question Paper – Sample {paper.sample}
               </h1>
 
-              {/* Parts Loop */}
+             
               {Object.entries(paper.question_paper).map(([part, questions]) => (
                 <div key={part} className="mb-6 ">
                   <h2 className="text-lg font-semibold mb-3 text-indigo-700 uppercase">
@@ -432,7 +557,7 @@ export default function Chat({ isWidget = false, hideHeader = false }) {
                 </div>
               ))}
             </div>
-          ))}
+          ))} */}
         </div>
       )
       }

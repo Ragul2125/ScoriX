@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import axios from "axios";
 
-export default function CreateClassroomModal({ isOpen, onClose }) {
+export default function CreateClassroomModal({ isOpen, onClose, onClassCreated }) {
   const [formData, setFormData] = useState({
     clsID: "",
     clsName: "",
@@ -39,8 +39,8 @@ export default function CreateClassroomModal({ isOpen, onClose }) {
     }
 
     try {
-        console.log(import.meta.env.VITE_BACKEND_URL);
-        console.log(formData)
+      console.log(import.meta.env.VITE_BACKEND_URL);
+      console.log(formData)
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/classrooms`,
         { ...formData, teacherProfile: teacherId },
@@ -53,6 +53,7 @@ export default function CreateClassroomModal({ isOpen, onClose }) {
 
       alert("Classroom created successfully!");
       console.log("✅ Response:", res.data);
+      if (onClassCreated) onClassCreated(); // Trigger refresh
       onClose();
     } catch (error) {
       console.error("❌ Error creating classroom:", error);

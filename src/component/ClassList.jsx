@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Outlet, useNavigate } from "react-router-dom";
 
-const ClassList = () => {
+const ClassList = ({ refreshKey }) => {
   const [classes, setClasses] = useState([]);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -41,17 +41,17 @@ const ClassList = () => {
   };
 
   useEffect(() => {
-    fetchClasses(); // initial fetch
-  }, []);
+    fetchClasses(); // fetch on mount or when refreshKey changes
+  }, [refreshKey]);
 
   const navigate = useNavigate();
-  
+
   const handleClassClick = (cls) => {
     navigate(`/classroom/${cls._id}`);
     localStorage.setItem("selectedClassroomId", cls._id);
     localStorage.setItem("selectedClassroomName", cls.clsName);
   };
-  
+
   return (
     <div className="flex flex-col gap-3 overflow-y-scroll h-full p-2 scrollbar-hide ">
       <div className="flex-1">
@@ -71,7 +71,7 @@ const ClassList = () => {
             </div>
             <div>
               <p className="text-white font-medium">{cls.clsName}</p>
-              <p className="text-gray-400 text-sm">{cls.department}</p>
+              <p className="text-gray-400 w-40 text-sm">{cls.department}</p>
             </div>
           </div>
         ))

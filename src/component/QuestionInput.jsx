@@ -12,6 +12,7 @@ import chatlogo from "../assets/chatlogo.png";
 import Sendicon from "../assets/send.svg";
 import Voice from "../assets/voice.png";
 import Name from "../assets/name.svg";
+import Chat from "./Chat";
 
 export default function QuestionInput({ setQuestionPapers, showChat = false }) {
   const [documents, setDocuments] = useState([]);
@@ -20,11 +21,14 @@ export default function QuestionInput({ setQuestionPapers, showChat = false }) {
 
   // Chat State
   const [messages, setMessages] = useState([]);
+
   const [chatInput, setChatInput] = useState("");
   const [chatMode, setChatMode] = useState("normal");
   const [chatModel, setChatModel] = useState("general");
   const [chatAttachedFiles, setChatAttachedFiles] = useState([]);
   const [isChatListening, setIsChatListening] = useState(false);
+  const [resultData, setResultData] = useState();
+
   const chatFileInputRef = useRef(null);
 
   const messagesEndRef = useRef(null);
@@ -34,6 +38,8 @@ export default function QuestionInput({ setQuestionPapers, showChat = false }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const ngrokUrl = "https://0b615aab87fe.ngrok-free.app"
 
   // ✅ File icon resolver
   const getIconForFile = (filename) => {
@@ -78,11 +84,13 @@ export default function QuestionInput({ setQuestionPapers, showChat = false }) {
   };
 
   const handleGenerate = async () => {
+
+
     setIsGenerated(true);
 
     // Trigger Chat "Thinking" state
     const triggerData = { prompt: prompt || "Generate questions", timestamp: Date.now() };
-    localStorage.setItem("pendingGeneration", JSON.stringify(triggerData));
+    // localStorage.setItem("pendingGeneration", JSON.stringify(triggerData));
 
     window.dispatchEvent(new CustomEvent("generate-triggered", {
       detail: triggerData
@@ -90,33 +98,49 @@ export default function QuestionInput({ setQuestionPapers, showChat = false }) {
 
     // Create FormData with all docs
     const formData = new FormData();
-    documents.forEach((doc) => {
-      formData.append("file", doc.file);
-    });
-    formData.append("text", prompt || "");
+    if (documents.length > 0) {
+      documents.forEach((doc) => {
+        formData.append("file", doc.file);
+      });
+    } else {
+      formData.append("file", "");
+    }
 
+    formData.append("text", prompt || "");
     console.log("Sending FormData...");
 
     try {
       const response = await fetch(
-        "https://ce4e1f142d44.ngrok-free.app/api/generate-questions",
+        `${ngrokUrl}/api/generate-question-paper`,
         {
           method: "POST",
           body: formData,
         }
       );
 
-      const result = await response.json();
+      if (!response.ok) throw new Error("Network response was not ok");
 
-      localStorage.setItem("questionPaper", JSON.stringify(result));
-      window.dispatchEvent(new Event("question-paper-updated"));
+      const result = await response.json();
+      console.log(result);
+
+      localStorage.setItem("stream_url", result.stream_url)
+      localStorage.setItem("task_id", result.task_id)
+
+      // Dispatch event with generation data for Chat component to start SSE
+      window.dispatchEvent(new CustomEvent("generation-data-ready", {
+        detail: {
+          stream_url: result.stream_url,
+          task_id: result.task_id,
+          ngrokUrl: ngrokUrl
+        }
+      }));
 
       if (result.questions) {
         console.log("✅ Generated Questions:", result.questions);
         alert("Questions generated successfully! Check console for output.");
         localStorage.setItem("generatedQuestions", JSON.stringify(result.questions));
       } else {
-        console.error("⚠️ Unexpected response:", result);
+        console.log("⚠️ Streaming started, waiting for completion...");
       }
     } catch (error) {
       console.error("❌ Upload error:", error);
@@ -226,6 +250,12 @@ export default function QuestionInput({ setQuestionPapers, showChat = false }) {
           "linear-gradient(90deg, #FFE8D0 0%, #F4E7DC 50%, #FFFFFF 100%)",
       }}
     >
+      {false && (
+        <Chat
+          data={resultData}
+        />
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 font-semibold text-lg text-black">

@@ -5,8 +5,13 @@ import { useNavigate } from "react-router-dom";
 import ImageReorderPopup from "./Upload";
 import { useParams } from "react-router-dom";
 import ImageReorderPopup2 from "./Upload1";
+import { useRef } from "react";
+
+
 
 const ClassroomDisplay = () => {
+  const fileInputRef = useRef(null);
+
   const navigate = useNavigate();
 
   const [classroom, setClassroom] = useState(null);
@@ -15,6 +20,8 @@ const ClassroomDisplay = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [openPopUp, setOpenPopUp] = useState(0);
   const [answerKeyFiles, setAnswerKeyFiles] = useState([]);
+  const [nameListFiles, setNameListFiles] = useState(null);
+
   const { id } = useParams();
   console.log(openPopUp);
   const BASE_URL =
@@ -115,7 +122,7 @@ const ClassroomDisplay = () => {
 
         try {
           const response = await fetch(
-            "https://a9b0719e2853.ngrok-free.app/process",
+            "https://481c190dbbd4.ngrok-free.app/process",
             {
               method: "POST",
               body: formData,
@@ -182,6 +189,45 @@ const ClassroomDisplay = () => {
       </div>
     );
 
+  const handleConvertor = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    console.log(formData);
+
+
+    try {
+      const response = await fetch(
+        "https://nonthreaded-revisional-deanna.ngrok-free.dev/upload",
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("File conversion failed");
+      }
+
+      const result = await response.json();
+      console.log("✅ Convert response:", result);
+
+      setNameListFiles(result)
+
+      // Example: result.url or result.data
+      alert("Student list uploaded successfully!");
+    } catch (err) {
+      console.error("❌ Convert error:", err);
+      alert("Failed to upload student list");
+    } finally {
+      // reset input so same file can be selected again
+      e.target.value = "";
+    }
+  };
+  console.log(nameListFiles?.length)
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 flex items-center flex-col">
       <div className="min-w-6xl bg-white rounded-xl shadow-sm border border-gray-200">
@@ -309,49 +355,63 @@ const ClassroomDisplay = () => {
                 Student List
               </h3>
               <div className="flex gap-2">
-                <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current.click()}
+                  className="relative flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+                >
                   <Plus className="w-4 h-4" />
                   Add Student Name List
                 </button>
-                <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls,.txt"
+                  className="hidden"
+                  onChange={handleConvertor}
+                />
               </div>
+
             </div>
 
             <div className="overflow-x-auto h-70">
               <table className="w-full ">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">
                       Roll No
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">
                       Student Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">
+                      Email Id
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">
                       Score
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">
                       Handwritten Paper
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">
                       Objective Paper
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {classroom.nameList?.map((student, index) => (
+                  {nameListFiles?.map((student, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {student.rollno}
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
+                        {student.rollNo}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
                         {student.name}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                        {student.emailId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           {index == 0
                             ? localStorage.getItem("total_mark") || "N/A"
@@ -361,7 +421,7 @@ const ClassroomDisplay = () => {
                       <td>
                         <button
                           onClick={() => setOpenPopUp(1)}
-                          className="flex items-center gap-2 text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                          className="flex items-center gap-2 text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition cursor-pointer whitespace-nowrap"
                         >
                           <Upload className="w-4 h-4" />
                           Upload Handwritten Answer Images
@@ -370,7 +430,7 @@ const ClassroomDisplay = () => {
                       <td>
                         <button
                           onClick={() => setOpenPopUp(2)}
-                          className="flex items-center gap-2 text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                          className="flex items-center gap-2 text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition cursor-pointer whitespace-nowrap"
                         >
                           <Upload className="w-4 h-4" />
                           Upload Objective Paper Images

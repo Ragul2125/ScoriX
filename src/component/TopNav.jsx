@@ -20,11 +20,11 @@ const TopNav = () => {
       setIsProfileModalOpen(true);
       return;
     }
-
+    const backend_url = import.meta.env.VITE_BACKEND_URL;
     try {
       setIsCheckingProfile(true);
       const response = await axios.get(
-        `http://localhost:5000/api/teacherprofile/${teacherId}`
+        `${backend_url}/api/teacherprofile/${teacherId}`
       );
 
       console.log(response);
